@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Buyungs — Manajemen Toko</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#FBF6F4;
+    --surface:#FFFDFC;
+    --surface-border:#EDE0DE;
+    --plum:#3B2733;
+    --plum-soft:#4A323F;
+    --rosewood:#B8697A;
+    --rosewood-dark:#9A5566;
+    --rosewood-light:#F3DEE2;
+    --sage:#8FA377;
+    --sage-dark:#5E7548;
+    --sage-light:#E6EDDD;
+    --amber:#CC9145;
+    --amber-dark:#8F6323;
+    --amber-light:#F6E5C9;
+    --brick:#B5504A;
+    --brick-dark:#8E3D39;
+    --brick-light:#F5DAD8;
+    --text:#2A1E24;
+    --text-muted:#8B7680;
+    --font-display:'Fraunces', serif;
+    --font-body:'Plus Jakarta Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --radius:14px;
+    --shadow:0 4px 16px rgba(59,39,51,0.07), 0 1px 3px rgba(59,39,51,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0; overflow-x:hidden;}
+  body{
+    font-family:var(--font-body);
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display); margin:0; color:var(--plum);}
+  p{margin:0;}
+  button{font-family:inherit;}
+  .app{display:flex; min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{
+    width:252px; flex-shrink:0; background:var(--plum); color:#F3E9E7;
+    display:flex; flex-direction:column; padding:26px 18px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; margin-bottom:30px; padding:0 6px;}
+  .brand-icon{width:34px; height:34px; flex-shrink:0;}
+  .brand-text{display:flex; flex-direction:column; line-height:1.15;}
+  .brand-title{font-family:var(--font-display); font-weight:600; font-size:17px; color:#fff; letter-spacing:.2px;}
+  .brand-sub{font-size:10.5px; color:#C9B4BB; text-transform:uppercase; letter-spacing:1px; margin-top:2px;}
+  .nav{display:flex; flex-direction:column; gap:4px; flex:1;}
+  .nav-item{
+    display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:10px;
+    color:#E7D9D6; background:transparent; border:none; font-size:14.5px; font-weight:500;
+    cursor:pointer; width:100%; text-align:left; transition:background .15s ease, color .15s ease;
+  }
+  .nav-item svg{width:18px; height:18px; flex-shrink:0; opacity:.85;}
+  .nav-item:hover{background:var(--plum-soft); color:#fff;}
+  .nav-item.active{background:var(--rosewood); color:#fff;}
+  .nav-item.active svg{opacity:1;}
+  .sidebar-footer{padding-top:16px; border-top:1px solid #4A323F; margin-top:12px;}
+  .storage-status{font-size:11.5px; color:#C9B4BB; display:flex; align-items:center; gap:6px;}
+  .storage-status .dot{width:7px; height:7px; border-radius:50%; background:var(--sage); display:inline-block;}
+  .storage-status.offline .dot{background:var(--amber);}
+  .reset-btn{
+    margin-top:10px; background:none; border:1px solid #5A4049; color:#C9B4BB; font-size:11.5px;
+    padding:6px 10px; border-radius:8px; cursor:pointer; width:100%; transition:all .15s ease;
+  }
+  .reset-btn:hover{border-color:var(--brick); color:#fff; background:var(--brick-dark);}
+
+  /* Main */
+  .main{flex:1; display:flex; flex-direction:column; min-width:0;}
+  .topbar{
+    padding:22px 34px; display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--surface-border); background:var(--surface);
+  }
+  .topbar h1{font-size:24px;}
+  .topbar-sub{font-size:13px; color:var(--text-muted); margin-top:3px;}
+  .topbar-date{font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); text-align:right;}
+  .content{padding:28px 34px 60px; flex:1;}
+  .panel{animation:fadeUp .35s ease;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  /* Cards */
+  .cards-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:24px;}
+  @media (max-width:1180px){ .cards-grid{grid-template-columns:repeat(3,1fr);} }
+  .stat-card{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:var(--radius);
+    padding:18px 20px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:6px;
+  }
+  .stat-card.accent{background:var(--plum); border-color:var(--plum);}
+  .stat-card.accent .stat-label{color:#D8C3C9;}
+  .stat-card.accent .stat-value{color:#fff;}
+  .stat-label{font-size:12.5px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px;}
+  .stat-value{font-family:var(--font-mono); font-size:23px; font-weight:600; color:var(--plum);}
+
+  .dash-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:18px;}
+  .panel-card{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:var(--radius);
+    padding:20px 22px; box-shadow:var(--shadow);
+  }
+  .panel-card h3{font-size:15.5px; margin-bottom:14px; font-weight:600;}
+  .empty-note{color:var(--text-muted); font-size:13.5px; padding:10px 0;}
+
+  /* Toolbar */
+  .toolbar{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;}
+  .toolbar-left{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .search-input{
+    padding:9px 14px; border-radius:9px; border:1px solid var(--surface-border); background:var(--surface);
+    font-size:13.5px; width:240px; font-family:var(--font-body);
+  }
+  .search-input:focus, input:focus, select:focus{outline:2px solid var(--rosewood-light); outline-offset:1px; border-color:var(--rosewood);}
+
+  /* Buttons */
+  .btn{
+    display:inline-flex; align-items:center; gap:7px; padding:9px 16px; border-radius:9px; border:none;
+    font-size:13.5px; font-weight:600; cursor:pointer; transition:transform .1s ease, box-shadow .15s ease, background .15s ease;
+    white-space:nowrap;
+  }
+  .btn svg{width:15px; height:15px;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--rosewood); color:#fff;}
+  .btn-primary:hover{background:var(--rosewood-dark);}
+  .btn-secondary{background:var(--sage-light); color:var(--sage-dark);}
+  .btn-secondary:hover{background:#D9E5C9;}
+  .btn-ghost{background:transparent; color:var(--text-muted); border:1px solid var(--surface-border);}
+  .btn-ghost:hover{border-color:var(--rosewood); color:var(--rosewood);}
+  .btn-danger{background:var(--brick); color:#fff;}
+  .btn-danger:hover{background:var(--brick-dark);}
+  .btn-sm{padding:6px 11px; font-size:12.5px; border-radius:7px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  /* Table */
+  .table-wrap{background:var(--surface); border:1px solid var(--surface-border); border-radius:var(--radius); overflow-x:auto; -webkit-overflow-scrolling:touch; box-shadow:var(--shadow);}
+  table{width:100%; border-collapse:collapse;}
+  thead th{
+    text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted);
+    background:#F7EFED; padding:12px 16px; font-weight:700; border-bottom:1px solid var(--surface-border);
+  }
+  tbody td{padding:13px 16px; font-size:13.8px; border-bottom:1px solid #F3E9E7; vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FDF8F7;}
+  td.num, th.num{font-family:var(--font-mono); text-align:right;}
+  .mini-table td{padding:8px 0; font-size:13px; border-bottom:1px dashed #EEE1DF;}
+  .mini-table tr:last-child td{border-bottom:none;}
+
+  /* Analitik: grafik & ranking */
+  .chart-wrap{width:100%; overflow-x:auto;}
+  .chart-svg{width:100%; height:240px; display:block; min-width:480px;}
+  .rank-bar{display:flex; align-items:center; gap:9px; min-width:150px;}
+  .rank-bar-track{position:relative; width:110px; height:10px; border-radius:6px; overflow:hidden; background:#F3E9E7; flex-shrink:0;}
+  .rank-bar-fill{position:absolute; left:0; top:0; bottom:0; border-radius:6px; background:linear-gradient(90deg, var(--rosewood), var(--amber));}
+
+  /* Stok: baris jenis & varian */
+  .jenis-row td{background:#FBF4F3;}
+  .jenis-sub{font-size:11px; color:var(--text-muted); font-weight:500; margin-top:2px;}
+  .expand-toggle{
+    background:none; border:none; cursor:pointer; font-size:12px; color:var(--rosewood-dark);
+    padding:2px 4px; margin-right:2px; vertical-align:middle;
+  }
+  .varian-row .varian-cell{background:#fff; padding-left:26px; font-size:13px; color:var(--text-muted);}
+  .varian-row:hover .varian-cell{background:#FDF8F7;}
+
+  /* Varian warna (form) */
+  .varian-list{display:flex; flex-direction:column; gap:10px; margin-bottom:8px;}
+  .varian-item{display:grid; grid-template-columns:1fr 1fr 90px auto; gap:8px; align-items:center; background:#FCF8F7; border:1px solid var(--surface-border); border-radius:9px; padding:8px;}
+  .varian-item input{padding:8px 10px; border-radius:7px; border:1px solid var(--surface-border); font-size:13px; font-family:var(--font-body);}
+  .varian-remove-btn{background:none; border:none; color:var(--brick); cursor:pointer; font-size:16px; padding:4px; line-height:1;}
+  .varian-remove-btn:hover{color:var(--brick-dark);}
+  .varian-add-btn{align-self:flex-start;}
+
+  /* Badge */
+  .badge{padding:3px 11px; border-radius:999px; font-size:11.5px; font-weight:700; display:inline-block;}
+  .badge-tersedia{background:var(--sage-light); color:var(--sage-dark);}
+  .badge-menipis{background:var(--amber-light); color:var(--amber-dark);}
+  .badge-habis{background:var(--brick-light); color:var(--brick-dark);}
+
+  /* Fabric stock bar (signature element) */
+  .stock-bar{display:flex; align-items:center; gap:9px; min-width:150px;}
+  .stock-bar-track{
+    position:relative; width:110px; height:13px; border-radius:7px; overflow:hidden;
+    background:repeating-linear-gradient(135deg, #EDE1E0 0 3px, #F6EDEC 3px 6px);
+    border:1px solid #E3D3D1; flex-shrink:0;
+  }
+  .stock-bar-fill{position:absolute; left:0; top:0; bottom:0; border-radius:7px 2px 2px 7px;}
+  .stock-bar[data-status="tersedia"] .stock-bar-fill{background:repeating-linear-gradient(135deg, var(--sage) 0 4px, #A2B98A 4px 8px);}
+  .stock-bar[data-status="menipis"] .stock-bar-fill{background:repeating-linear-gradient(135deg, var(--amber) 0 4px, #DDA55C 4px 8px);}
+  .stock-bar[data-status="habis"] .stock-bar-fill{background:repeating-linear-gradient(135deg, var(--brick) 0 4px, #C56862 4px 8px);}
+  .stock-bar-fill::after{
+    content:''; position:absolute; right:-1px; top:50%; transform:translateY(-50%);
+    width:13px; height:13px; border-radius:50%; border:2px solid var(--surface);
+  }
+  .stock-bar[data-status="tersedia"] .stock-bar-fill::after{background:var(--sage-dark);}
+  .stock-bar[data-status="menipis"] .stock-bar-fill::after{background:var(--amber-dark);}
+  .stock-bar[data-status="habis"] .stock-bar-fill::after{background:var(--brick-dark);}
+  .stock-num{font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--text);}
+  .mini-row{display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px dashed #EEE1DF;}
+  .mini-row:last-child{border-bottom:none;}
+  .mini-row-name{font-size:13.3px; font-weight:600; color:var(--text);}
+
+  /* Forms */
+  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:15px;}
+  .field label{font-size:12.5px; font-weight:600; color:var(--text-muted);}
+  .field input, .field select{
+    padding:10px 12px; border-radius:9px; border:1px solid var(--surface-border); font-size:14px;
+    font-family:var(--font-body); background:#fff;
+  }
+  .field-hint{font-size:11.5px; color:var(--text-muted);}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+
+  /* Cards for forms (penjualan / laporan) */
+  .form-card{background:var(--surface); border:1px solid var(--surface-border); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow);}
+  .grid-2{display:grid; grid-template-columns:1.1fr 1fr; gap:20px; align-items:start;}
+  .cart-total-row{display:flex; justify-content:space-between; align-items:center; padding:16px 4px 4px; font-family:var(--font-mono); font-size:16px; font-weight:700; color:var(--plum);}
+  .csv-box{border:1.5px dashed var(--surface-border); border-radius:12px; padding:16px; margin-top:18px; background:#FCF8F7;}
+  .csv-box p{font-size:12.8px; color:var(--text-muted); margin-bottom:10px;}
+
+  /* Modal */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(42,30,36,.42); display:flex; align-items:center; justify-content:center;
+    z-index:50; animation:fadeIn .18s ease;
+  }
+  .modal-overlay[hidden]{ display:none; }
+  @keyframes fadeIn{from{opacity:0;} to{opacity:1;}}
+  .modal{background:#fff; border-radius:16px; padding:26px 26px 22px; width:420px; max-width:92vw; box-shadow:0 20px 50px rgba(42,30,36,.25); max-height:88vh; overflow-y:auto;}
+  .modal.small{width:380px;}
+  .modal h2{font-size:19px; margin-bottom:18px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:6px;}
+  #confirmMessage{font-size:14.5px; color:var(--text); line-height:1.5; margin-bottom:20px;}
+
+  /* Toast */
+  .toast-container{position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:100;}
+  .toast{
+    background:var(--plum); color:#fff; padding:12px 18px; border-radius:10px; font-size:13.5px;
+    box-shadow:0 8px 24px rgba(0,0,0,.18); opacity:0; transform:translateY(8px); transition:all .25s ease; max-width:320px;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast-success{background:var(--sage-dark);}
+  .toast-error{background:var(--brick-dark);}
+  .toast-warning{background:var(--amber-dark);}
+
+  .summary-bar{display:flex; gap:22px; margin-bottom:16px; flex-wrap:wrap;}
+  .summary-chip{background:var(--surface); border:1px solid var(--surface-border); border-radius:10px; padding:10px 16px; font-size:12.8px; color:var(--text-muted); display:flex; gap:8px; align-items:baseline;}
+  .summary-chip b{font-family:var(--font-mono); font-size:15px; color:var(--plum);}
+
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%; flex-direction:row; align-items:center; padding:12px 16px; overflow-x:auto;}
+    .brand{margin-bottom:0; margin-right:18px;}
+    .nav{flex-direction:row; flex:none;}
+    .sidebar-footer{display:none;}
+    .cards-grid{grid-template-columns:1fr 1fr;}
+    .dash-grid, .grid-2{grid-template-columns:1fr;}
+    .content{padding:20px;}
+    .topbar{padding:18px 20px; flex-direction:column; align-items:flex-start; gap:6px;}
+    .varian-item{grid-template-columns:1fr 1fr; grid-template-rows:auto auto; }
+    .varian-item input:nth-child(3){grid-column:1 / 2;}
+    .varian-remove-btn{grid-column:2 / 3; justify-self:end;}
+  }
+  @media (max-width:600px){
+    .brand-title{font-size:15px;}
+    .brand-sub{font-size:9.5px;}
+    .nav-item{padding:9px 10px; font-size:13px;}
+    .topbar h1{font-size:19px;}
+    .topbar-sub{font-size:12px;}
+    .topbar-date{display:none;}
+    .content{padding:14px;}
+    .cards-grid{grid-template-columns:1fr 1fr; gap:10px;}
+    .stat-card{padding:13px 14px;}
+    .stat-value{font-size:18px;}
+    .stat-label{font-size:11px;}
+    .panel-card{padding:14px 14px;}
+    .toolbar{gap:8px;}
+    .toolbar-left{width:100%;}
+    .search-input{width:100%;}
+    .btn{padding:8px 12px; font-size:12.5px;}
+    thead th{padding:9px 10px; font-size:10.5px;}
+    tbody td{padding:10px 10px; font-size:12.8px;}
+    .modal{padding:18px 16px 16px; width:100%; max-width:100vw; border-radius:14px 14px 0 0;}
+    .modal-overlay{align-items:flex-end;}
+    .chart-svg{min-width:420px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 30C10 18 16 10 24 10C32 10 38 18 42 30" stroke="#E0AAB6" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M9 34C13 23 18 16 24 16C30 16 35 23 39 34" stroke="#B8697A" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M12 38C15.5 28.5 19.5 22 24 22C28.5 22 32.5 28.5 36 38" stroke="#F3E9E7" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-title">The Buyungs</span>
+        <span class="brand-sub">Manajemen Toko</span>
+      </div>
+    </div>
+    <nav class="nav" id="navList">
+      <button class="nav-item active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-tab="stok">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        Stok Produk
+      </button>
+      <button class="nav-item" data-tab="penjualan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 3H21l-2 9H7L4 4H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+        Input Penjualan
+      </button>
+      <button class="nav-item" data-tab="laporan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h2"/></svg>
+        Laporan
+      </button>
+      <button class="nav-item" data-tab="analitik">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+        Analitik
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="storage-status" id="storageStatus"><span class="dot"></span> Tersimpan otomatis</span>
+      <button class="reset-btn" id="resetBtn">Reset semua data</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="topbar-sub" id="pageSub">Ringkasan kondisi toko Anda hari ini</div>
+      </div>
+      <div class="topbar-date" id="topbarDate"></div>
+    </header>
+    <section class="content" id="content">
+      <div class="panel" id="panel-dashboard"></div>
+      <div class="panel" id="panel-stok" hidden></div>
+      <div class="panel" id="panel-penjualan" hidden></div>
+      <div class="panel" id="panel-laporan" hidden></div>
+      <div class="panel" id="panel-analitik" hidden></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal">
+    <h2 id="modalTitle">Tambah Produk</h2>
+    <form id="produkForm">
+      <div class="field">
+        <label>Nama Produk</label>
+        <input type="text" name="nama" placeholder="Contoh: Pashmina Ceruty Premium" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Kategori</label>
+          <input type="text" name="kategori" list="kategoriList" placeholder="Pashmina">
+          <datalist id="kategoriList">
+            <option value="Pashmina"><option value="Segiempat"><option value="Bergo / Instan">
+            <option value="Khimar"><option value="Ciput"><option value="Aksesoris">
+          </datalist>
+        </div>
+        <div class="field">
+          <label>SKU Jenis (opsional)</label>
+          <input type="text" name="sku" placeholder="PSH-001">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Harga Jual (Rp)</label>
+          <input type="number" name="harga" min="0" step="500" required>
+        </div>
+        <div class="field">
+          <label>Batas Stok Menipis (per warna)</label>
+          <input type="number" name="stokMin" min="0" step="1" value="5">
+        </div>
+      </div>
+      <span class="field-hint" style="display:block; margin:-6px 0 14px;">Satu warna akan ditandai "menipis" jika stoknya berada di titik ini atau lebih rendah.</span>
+
+      <div class="field">
+        <label id="stokLabel">Varian Warna &amp; Stok</label>
+        <div class="varian-list" id="varianList"></div>
+        <button type="button" class="btn btn-ghost btn-sm varian-add-btn" id="addVarianBtn">+ Tambah Warna</button>
+        <span class="field-hint">Setiap warna punya SKU dan jumlah stok sendiri. Total stok jenis dihitung otomatis dari semua warna.</span>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelModalBtn">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan Produk</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmOverlay" hidden>
+  <div class="modal small">
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirmCancel">Batal</button>
+      <button class="btn btn-danger" id="confirmOk">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- State ---------- */
+  var state = { produk: [], transaksi: [] };
+  var cart = [];
+  var stokSearch = '';
+  var laporanFilter = { dari: startOfMonthIso(), sampai: todayIso() };
+  var penjualanTanggal = todayIso();
+  var analitikGranularitas = 'harian'; // harian | mingguan | bulanan
+  var analitikFilter = { dari: isoDate(daysAgo(29)), sampai: todayIso() };
+  /* ---------- KONFIGURASI GOOGLE SHEETS ----------
+     Tempel URL Web App hasil deploy Google Apps Script di sini.
+     Lihat panduan deploy di file Code.gs / PANDUAN_SETUP.md yang menyertai file ini.
+     Contoh: 'https://script.google.com/macros/s/AKfycb.../exec'
+  */
+  var GAS_URL = 'PASTE_URL_WEB_APP_ANDA_DI_SINI';
+
+  var gasConfigured = GAS_URL && GAS_URL.indexOf('https://') === 0;
+  var storageIsLive = gasConfigured || !!window.storage;
+
+  /* ---------- Storage wrapper ---------- */
+  var memoryStore = {};
+  var storageAPI = {
+    get: function(key){
+      if(gasConfigured){
+        return fetch(GAS_URL + '?key=' + encodeURIComponent(key))
+          .then(function(r){ return r.json(); })
+          .then(function(json){
+            return (json && json.value != null) ? { key: key, value: json.value } : null;
+          });
+      }
+      if(window.storage){ return window.storage.get(key, false); }
+      return Promise.resolve(memoryStore[key] !== undefined ? { key: key, value: memoryStore[key] } : null);
+    },
+    set: function(key, value){
+      if(gasConfigured){
+        return fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight di Apps Script
+          body: JSON.stringify({ key: key, value: value })
+        }).then(function(r){ return r.json(); })
+          .then(function(){ return { key: key, value: value }; });
+      }
+      if(window.storage){ return window.storage.set(key, value, false); }
+      memoryStore[key] = value;
+      return Promise.resolve({ key: key, value: value });
+    }
+  };
+
+  function loadData(){
+    return storageAPI.get('toko-data').then(function(res){
+      if(res && res.value){
+        var parsed = JSON.parse(res.value);
+        state.produk = parsed.produk || [];
+        state.transaksi = parsed.transaksi || [];
+      } else {
+        seedInitialData();
+        return persist();
+      }
+    }).catch(function(){
+      seedInitialData();
+      return persist().catch(function(){});
+    });
+  }
+
+  function persist(){
+    return storageAPI.set('toko-data', JSON.stringify({ produk: state.produk, transaksi: state.transaksi })).then(function(){
+      setStorageStatus(true);
+    }).catch(function(){
+      setStorageStatus(false);
+      showToast('Gagal menyimpan data. Perubahan mungkin hilang saat halaman ditutup.', 'error');
+    });
+  }
+
+  function setStorageStatus(ok){
+    var el = document.getElementById('storageStatus');
+    if(!storageIsLive){
+      el.classList.add('offline');
+      el.innerHTML = '<span class="dot"></span> Mode lokal (tidak tersimpan permanen)';
+      return;
+    }
+    if(ok){
+      el.classList.remove('offline');
+      el.innerHTML = '<span class="dot"></span> ' + (gasConfigured ? 'Tersambung ke Google Sheets' : 'Tersimpan otomatis');
+    } else {
+      el.classList.add('offline');
+      el.innerHTML = '<span class="dot"></span> ' + (gasConfigured ? 'Gagal terhubung ke Google Sheets' : 'Gagal menyimpan');
+    }
+  }
+
+  function seedInitialData(){
+    state.produk = [
+      { id: genId('p'), nama: 'Pashmina Ceruty Premium', kategori: 'Pashmina', sku: 'PSH-001', harga: 65000, stokMin: 8, varian: [
+          { id: genId('v'), warna: 'Maroon', sku: 'PSH-001-MRN', stok: 10 },
+          { id: genId('v'), warna: 'Navy', sku: 'PSH-001-NVY', stok: 9 },
+          { id: genId('v'), warna: 'Dusty Pink', sku: 'PSH-001-DPK', stok: 5 }
+        ] },
+      { id: genId('p'), nama: 'Segiempat Voal Motif', kategori: 'Segiempat', sku: 'SGE-014', harga: 45000, stokMin: 8, varian: [
+          { id: genId('v'), warna: 'Motif Bunga', sku: 'SGE-014-BNG', stok: 3 },
+          { id: genId('v'), warna: 'Motif Polka', sku: 'SGE-014-PLK', stok: 2 }
+        ] },
+      { id: genId('p'), nama: 'Bergo Instan Rabbani', kategori: 'Bergo / Instan', sku: 'BRG-022', harga: 55000, stokMin: 6, varian: [
+          { id: genId('v'), warna: 'Hitam', sku: 'BRG-022-HTM', stok: 7 },
+          { id: genId('v'), warna: 'Abu-abu', sku: 'BRG-022-ABU', stok: 9 }
+        ] },
+      { id: genId('p'), nama: 'Khimar Jersey Polos', kategori: 'Khimar', sku: 'KHM-007', harga: 85000, stokMin: 5, varian: [
+          { id: genId('v'), warna: 'Coklat', sku: 'KHM-007-CKL', stok: 2 },
+          { id: genId('v'), warna: 'Hitam', sku: 'KHM-007-HTM', stok: 0 }
+        ] },
+      { id: genId('p'), nama: 'Ciput Anti Tembus', kategori: 'Ciput', sku: 'CPT-003', harga: 20000, stokMin: 10, varian: [
+          { id: genId('v'), warna: 'Hitam', sku: 'CPT-003-HTM', stok: 22 },
+          { id: genId('v'), warna: 'Putih', sku: 'CPT-003-PTH', stok: 18 }
+        ] },
+      { id: genId('p'), nama: 'Bros Kerudung Mutiara', kategori: 'Aksesoris', sku: 'AKS-010', harga: 15000, stokMin: 5, varian: [
+          { id: genId('v'), warna: 'Gold', sku: 'AKS-010-GLD', stok: 0 },
+          { id: genId('v'), warna: 'Silver', sku: 'AKS-010-SLV', stok: 0 }
+        ] }
+    ];
+    var y = new Date(); y.setDate(y.getDate()-1);
+    var yIso = isoDate(y);
+    var t = todayIso();
+    var p0 = state.produk[0], p2 = state.produk[2];
+    var v0 = p0.varian[0], v2 = p2.varian[0];
+    state.transaksi = [
+      { id: generateTrxId(yIso), tanggal: yIso, items: [
+          { produkId: p0.id, varianId: v0.id, nama: p0.nama, warna: v0.warna, harga: p0.harga, qty: 2, subtotal: p0.harga*2 }
+        ], total: p0.harga*2 },
+      { id: generateTrxId(t), tanggal: t, items: [
+          { produkId: p2.id, varianId: v2.id, nama: p2.nama, warna: v2.warna, harga: p2.harga, qty: 1, subtotal: p2.harga*1 }
+        ], total: p2.harga*1 }
+    ];
+  }
+
+  /* ---------- Helpers ---------- */
+  function genId(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
+  function todayIso(){ return isoDate(new Date()); }
+  function isoDate(d){
+    var m = (d.getMonth()+1).toString().padStart(2,'0');
+    var day = d.getDate().toString().padStart(2,'0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function startOfMonthIso(){
+    var d = new Date(); d.setDate(1);
+    return isoDate(d);
+  }
+  function daysAgo(n){
+    var d = new Date(); d.setDate(d.getDate() - n);
+    return d;
+  }
+  function startOfWeekIso(iso){
+    var d = new Date(iso + 'T00:00:00');
+    var day = d.getDay(); // 0=Minggu .. 6=Sabtu
+    var diff = (day === 0 ? -6 : 1 - day); // geser ke Senin
+    d.setDate(d.getDate() + diff);
+    return isoDate(d);
+  }
+  function formatTanggalPendek(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('id-ID', { day:'numeric', month:'short' });
+  }
+  function formatBulanTahun(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('id-ID', { month:'long', year:'numeric' });
+  }
+  function formatBulanTahunPendek(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('id-ID', { month:'short', year:'2-digit' });
+  }
+  function formatCompactNumber(n){
+    n = Number(n) || 0;
+    if(n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'jt';
+    if(n >= 1000) return Math.round(n/1000) + 'rb';
+    return String(Math.round(n));
+  }
+  function rupiah(n){ return 'Rp' + Math.round(Number(n)||0).toLocaleString('id-ID'); }
+  function formatTanggal(iso){
+    if(!iso) return '-';
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+  }
+  function escapeHtml(str){
+    return String(str==null?'':str).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  function generateTrxId(tanggal){
+    var tgl = tanggal.replace(/-/g, '');
+    var count = state.transaksi.filter(function(t){ return t.tanggal === tanggal; }).length + 1;
+    return 'TRX-' + tgl + '-' + String(count).padStart(3,'0');
+  }
+  function varianStockStatus(v, stokMin){
+    if(v.stok <= 0) return 'habis';
+    if(v.stok <= stokMin) return 'menipis';
+    return 'tersedia';
+  }
+  function stockStatusLabel(status){
+    return status === 'habis' ? 'Habis' : (status === 'menipis' ? 'Menipis' : 'Tersedia');
+  }
+  function totalStok(p){
+    return (p.varian || []).reduce(function(a,v){ return a + (Number(v.stok)||0); }, 0);
+  }
+  function totalNilai(p){
+    return totalStok(p) * (Number(p.harga)||0);
+  }
+  function jenisStatus(p){
+    // status keseluruhan jenis = status terburuk dari semua varian warnanya
+    var list = p.varian || [];
+    if(list.length === 0) return 'habis';
+    var adaHabis = list.some(function(v){ return varianStockStatus(v, p.stokMin) === 'habis'; });
+    var adaMenipis = list.some(function(v){ return varianStockStatus(v, p.stokMin) === 'menipis'; });
+    if(list.every(function(v){ return varianStockStatus(v, p.stokMin) === 'habis'; })) return 'habis';
+    if(adaHabis || adaMenipis) return 'menipis';
+    return 'tersedia';
+  }
+  function stockPercent(stok, stokMin){
+    var ref = Math.max(stokMin * 4, 10);
+    return Math.max(4, Math.min(100, Math.round((stok / ref) * 100)));
+  }
+  function fabricBar(stok, stokMin, status){
+    var pct = stockPercent(stok, stokMin);
+    return '<div class="stock-bar" data-status="' + status + '">' +
+      '<div class="stock-bar-track"><div class="stock-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '<span class="stock-num">' + stok + '</span></div>';
+  }
+  function rekomendasiBeli(status){
+    if(status === 'habis') return 'Segera beli stok';
+    if(status === 'menipis') return 'Pertimbangkan beli stok';
+    return 'Stok masih aman';
+  }
+  function normalizeDate(raw){
+    raw = raw.trim();
+    if(/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    var m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m){ return m[3] + '-' + m[1].padStart(2,'0') + '-' + m[2].padStart(2,'0'); }
+    return todayIso();
+  }
+
+  /* ---------- Toast ---------- */
+  function showToast(msg, type){
+    var container = document.getElementById('toastContainer');
+    var el = document.createElement('div');
+    el.className = 'toast' + (type ? ' toast-' + type : '');
+    el.textContent = msg;
+    container.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add('show'); });
+    setTimeout(function(){
+      el.classList.remove('show');
+      setTimeout(function(){ el.remove(); }, 300);
+    }, 3400);
+  }
+
+  /* ---------- Confirm modal ---------- */
+  function showConfirm(message){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById('confirmOverlay');
+      var msgEl = document.getElementById('confirmMessage');
+      var okBtn = document.getElementById('confirmOk');
+      var cancelBtn = document.getElementById('confirmCancel');
+      msgEl.textContent = message;
+      overlay.hidden = false;
+      function cleanup(result){
+        overlay.hidden = true;
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+        resolve(result);
+      }
+      okBtn.onclick = function(){ cleanup(true); };
+      cancelBtn.onclick = function(){ cleanup(false); };
+    });
+  }
+
+  /* ---------- Tabs ---------- */
+  var TAB_META = {
+    dashboard: { title: 'Dashboard', sub: 'Ringkasan kondisi toko Anda hari ini' },
+    stok: { title: 'Stok Produk', sub: 'Kelola daftar produk dan jumlah stok' },
+    penjualan: { title: 'Input Penjualan', sub: 'Catat transaksi penjualan, stok berkurang otomatis' },
+    laporan: { title: 'Laporan Penjualan', sub: 'Lihat riwayat dan unduh laporan penjualan' },
+    analitik: { title: 'Analitik Penjualan', sub: 'Tren penjualan dan produk paling laris untuk bantu keputusan beli stok' }
+  };
+
+  function switchTab(tab){
+    Object.keys(TAB_META).forEach(function(key){
+      document.getElementById('panel-' + key).hidden = (key !== tab);
+    });
+    document.querySelectorAll('.nav-item').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    document.getElementById('pageTitle').textContent = TAB_META[tab].title;
+    document.getElementById('pageSub').textContent = TAB_META[tab].sub;
+    renderAll();
+  }
+
+  function renderAll(){
+    renderDashboard();
+    renderStok();
+    renderPenjualan();
+    renderLaporan();
+    renderAnalitik();
+  }
+
+  /* ---------- Dashboard ---------- */
+  function renderDashboard(){
+    var panel = document.getElementById('panel-dashboard');
+    var totalJenis = state.produk.length;
+    var totalVarian = state.produk.reduce(function(a,p){ return a + (p.varian||[]).length; }, 0);
+    var totalStokAll = state.produk.reduce(function(a,p){ return a + totalStok(p); }, 0);
+    var nilaiStok = state.produk.reduce(function(a,p){ return a + totalNilai(p); }, 0);
+    var today = todayIso();
+    var penjualanHariIni = state.transaksi.filter(function(t){ return t.tanggal === today; })
+      .reduce(function(a,t){ return a + t.total; }, 0);
+
+    // Kumpulkan semua varian warna yang stoknya menipis/habis, lintas jenis produk
+    var lowStockVarian = [];
+    state.produk.forEach(function(p){
+      (p.varian||[]).forEach(function(v){
+        var status = varianStockStatus(v, p.stokMin);
+        if(status !== 'tersedia'){
+          lowStockVarian.push({ jenis: p.nama, warna: v.warna, sku: v.sku, stok: v.stok, stokMin: p.stokMin, status: status });
+        }
+      });
+    });
+    lowStockVarian.sort(function(a,b){ return a.stok - b.stok; });
+
+    var recentTrx = state.transaksi.slice(0,5);
+
+    var lowStockHtml = lowStockVarian.length === 0
+      ? '<p class="empty-note">Semua stok dalam kondisi aman.</p>'
+      : lowStockVarian.map(function(v){
+          return '<div class="mini-row"><span class="mini-row-name">' + escapeHtml(v.jenis) + ' — ' + escapeHtml(v.warna) + '</span>' + fabricBar(v.stok, v.stokMin, v.status) + '</div>';
+        }).join('');
+
+    var recentHtml = recentTrx.length === 0
+      ? '<p class="empty-note">Belum ada transaksi.</p>'
+      : '<table class="mini-table"><tbody>' + recentTrx.map(function(t){
+          return '<tr><td>' + t.id + '</td><td>' + formatTanggal(t.tanggal) + '</td><td class="num">' + rupiah(t.total) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+
+    panel.innerHTML =
+      '<div class="cards-grid">' +
+        '<div class="stat-card"><span class="stat-label">Jenis Produk</span><span class="stat-value">' + totalJenis + '</span></div>' +
+        '<div class="stat-card"><span class="stat-label">Total Varian Warna</span><span class="stat-value">' + totalVarian + '</span></div>' +
+        '<div class="stat-card"><span class="stat-label">Total Stok</span><span class="stat-value">' + totalStokAll + ' pcs</span></div>' +
+        '<div class="stat-card"><span class="stat-label">Nilai Stok</span><span class="stat-value">' + rupiah(nilaiStok) + '</span></div>' +
+        '<div class="stat-card accent"><span class="stat-label">Penjualan Hari Ini</span><span class="stat-value">' + rupiah(penjualanHariIni) + '</span></div>' +
+      '</div>' +
+      '<div class="dash-grid">' +
+        '<div class="panel-card"><h3>Warna Stok Menipis &amp; Habis</h3>' + lowStockHtml + '</div>' +
+        '<div class="panel-card"><h3>Transaksi Terbaru</h3>' + recentHtml + '</div>' +
+      '</div>';
+  }
+
+  /* ---------- Stok ---------- */
+  var stokExpanded = {}; // id jenis -> true/false (default terbuka)
+
+  function renderStok(){
+    var panel = document.getElementById('panel-stok');
+    var q = stokSearch.toLowerCase();
+    var filtered = state.produk.filter(function(p){
+      if(!q) return true;
+      if(p.nama.toLowerCase().indexOf(q) !== -1 || p.kategori.toLowerCase().indexOf(q) !== -1) return true;
+      if((p.sku||'').toLowerCase().indexOf(q) !== -1) return true;
+      return (p.varian||[]).some(function(v){
+        return v.warna.toLowerCase().indexOf(q) !== -1 || (v.sku||'').toLowerCase().indexOf(q) !== -1;
+      });
+    });
+
+    var rows = filtered.length === 0
+      ? '<tr><td colspan="7" class="empty-note">Tidak ada produk yang cocok.</td></tr>'
+      : filtered.map(function(p){
+          var status = jenisStatus(p);
+          var stokTotal = totalStok(p);
+          var expanded = stokExpanded[p.id] !== false; // default terbuka
+          var jenisRow = '<tr class="jenis-row" data-jenis-id="' + p.id + '">' +
+            '<td><button class="expand-toggle" data-action="toggle-jenis" data-id="' + p.id + '" aria-label="Buka/tutup rincian warna">' + (expanded ? '▾' : '▸') + '</button> <strong>' + escapeHtml(p.nama) + '</strong>' +
+              '<div class="jenis-sub">' + escapeHtml(p.kategori) + ' · ' + (p.varian||[]).length + ' warna</div></td>' +
+            '<td>' + escapeHtml(p.kategori) + '</td>' +
+            '<td>' + escapeHtml(p.sku || '—') + '<div class="jenis-sub">SKU Jenis</div></td>' +
+            '<td class="num">' + rupiah(p.harga) + '</td>' +
+            '<td>' + fabricBar(stokTotal, p.stokMin * Math.max((p.varian||[]).length,1), status) + '<div class="jenis-sub">Total ' + stokTotal + ' pcs semua warna</div></td>' +
+            '<td><span class="badge badge-' + status + '">' + stockStatusLabel(status) + '</span></td>' +
+            '<td>' +
+              '<button class="btn btn-ghost btn-sm" data-action="edit-produk" data-id="' + p.id + '">Edit</button> ' +
+              '<button class="btn btn-ghost btn-sm" data-action="delete-produk" data-id="' + p.id + '">Hapus</button>' +
+            '</td>' +
+          '</tr>';
+
+          var varianRows = '';
+          if(expanded){
+            varianRows = (p.varian||[]).map(function(v){
+              var vStatus = varianStockStatus(v, p.stokMin);
+              return '<tr class="varian-row">' +
+                '<td class="varian-cell">↳ ' + escapeHtml(v.warna) + '</td>' +
+                '<td class="varian-cell">—</td>' +
+                '<td class="varian-cell">' + escapeHtml(v.sku || '—') + '</td>' +
+                '<td class="num varian-cell">' + rupiah(p.harga) + '</td>' +
+                '<td class="varian-cell">' + fabricBar(v.stok, p.stokMin, vStatus) + '</td>' +
+                '<td class="varian-cell"><span class="badge badge-' + vStatus + '">' + stockStatusLabel(vStatus) + '</span></td>' +
+                '<td class="varian-cell"></td>' +
+              '</tr>';
+            }).join('');
+            if(!varianRows){
+              varianRows = '<tr class="varian-row"><td class="varian-cell empty-note" colspan="7">Belum ada varian warna untuk jenis ini.</td></tr>';
+            }
+          }
+          return jenisRow + varianRows;
+        }).join('');
+
+    panel.innerHTML =
+      '<div class="toolbar">' +
+        '<div class="toolbar-left">' +
+          '<input type="text" class="search-input" id="stokSearchInput" placeholder="Cari nama, kategori, warna, atau SKU..." value="' + escapeHtml(stokSearch) + '">' +
+          '<button class="btn btn-secondary" data-action="export-stok-excel">Unduh Excel</button>' +
+          '<button class="btn btn-secondary" data-action="export-stok-pdf">Unduh PDF</button>' +
+        '</div>' +
+        '<button class="btn btn-primary" data-action="tambah-produk">+ Tambah Produk</button>' +
+      '</div>' +
+      '<p class="field-hint" style="margin-bottom:12px;">Setiap jenis kerudung menampilkan total stok gabungan. Klik ▾ untuk melihat rincian stok tiap warna beserta SKU-nya.</p>' +
+      '<div class="table-wrap"><table>' +
+        '<thead><tr><th>Nama Produk / Warna</th><th>Kategori</th><th>SKU</th><th class="num">Harga</th><th>Stok</th><th>Status</th><th>Aksi</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div>';
+  }
+
+  function toggleJenisExpand(id){
+    stokExpanded[id] = (stokExpanded[id] === false) ? true : false;
+    renderStok();
+  }
+
+  /* ---------- Penjualan ---------- */
+  function renderPenjualan(){
+    var panel = document.getElementById('panel-penjualan');
+    var produkOptions = [];
+    state.produk.forEach(function(p){
+      (p.varian||[]).forEach(function(v){
+        produkOptions.push('<option value="' + p.id + '::' + v.id + '"' + (v.stok<=0?' disabled':'') + '>' +
+          escapeHtml(p.nama) + ' — ' + escapeHtml(v.warna) + ' (stok: ' + v.stok + ')</option>');
+      });
+    });
+    produkOptions = produkOptions.join('');
+
+    var cartRows = cart.length === 0
+      ? '<tr><td colspan="6" class="empty-note">Belum ada item di keranjang.</td></tr>'
+      : cart.map(function(item, idx){
+          return '<tr>' +
+            '<td>' + escapeHtml(item.nama) + '</td>' +
+            '<td>' + escapeHtml(item.warna) + '</td>' +
+            '<td class="num">' + item.qty + '</td>' +
+            '<td class="num">' + rupiah(item.harga) + '</td>' +
+            '<td class="num">' + rupiah(item.subtotal) + '</td>' +
+            '<td><button class="btn btn-ghost btn-sm" data-action="remove-cart" data-idx="' + idx + '">Hapus</button></td>' +
+          '</tr>';
+        }).join('');
+
+    var total = cart.reduce(function(a,i){ return a + i.subtotal; }, 0);
+
+    panel.innerHTML =
+      '<div class="grid-2">' +
+        '<div class="form-card">' +
+          '<h3 style="margin-bottom:16px;">Tambah Item Penjualan</h3>' +
+          '<div class="field"><label>Tanggal Transaksi</label><input type="date" id="tanggalInput" value="' + penjualanTanggal + '"></div>' +
+          '<div class="field"><label>Produk</label><select id="produkSelect">' + (produkOptions || '<option disabled>Belum ada produk</option>') + '</select></div>' +
+          '<div class="field"><label>Jumlah (Qty)</label><input type="number" id="qtyInput" min="1" value="1"></div>' +
+          '<button class="btn btn-primary" data-action="add-cart" style="width:100%; justify-content:center;">+ Tambah ke Keranjang</button>' +
+
+          '<div class="csv-box">' +
+            '<p><strong>Upload data penjualan massal (CSV)</strong><br>Kolom: nama_produk, warna, qty, tanggal (opsional). Kolom warna wajib diisi jika produk punya lebih dari satu warna. Stok warna terkait akan otomatis terpotong untuk setiap baris yang valid.</p>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+              '<label class="btn btn-secondary btn-sm" style="cursor:pointer;">Pilih File CSV<input type="file" id="csvInput" accept=".csv" hidden></label>' +
+              '<button class="btn btn-ghost btn-sm" data-action="download-template">Unduh Template CSV</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="form-card">' +
+          '<h3 style="margin-bottom:16px;">Keranjang Transaksi</h3>' +
+          '<div class="table-wrap"><table>' +
+            '<thead><tr><th>Produk</th><th>Warna</th><th class="num">Qty</th><th class="num">Harga</th><th class="num">Subtotal</th><th></th></tr></thead>' +
+            '<tbody>' + cartRows + '</tbody>' +
+          '</table></div>' +
+          '<div class="cart-total-row"><span>Total</span><span>' + rupiah(total) + '</span></div>' +
+          '<button class="btn btn-primary" data-action="simpan-transaksi" style="width:100%; justify-content:center; margin-top:6px;" ' + (cart.length===0?'disabled':'') + '>Simpan Transaksi</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function findVarian(produkId, varianId){
+    var produk = state.produk.find(function(p){ return p.id === produkId; });
+    if(!produk) return null;
+    var varian = (produk.varian||[]).find(function(v){ return v.id === varianId; });
+    if(!varian) return null;
+    return { produk: produk, varian: varian };
+  }
+
+  function addToCart(){
+    var select = document.getElementById('produkSelect');
+    var qtyInput = document.getElementById('qtyInput');
+    if(!select || !select.value){ showToast('Pilih produk terlebih dahulu.', 'error'); return; }
+    var parts = select.value.split('::');
+    var found = findVarian(parts[0], parts[1]);
+    var qty = parseInt(qtyInput.value, 10);
+    if(!found){ return; }
+    var produk = found.produk, varian = found.varian;
+    if(!qty || qty <= 0){ showToast('Jumlah harus lebih dari 0.', 'error'); return; }
+    var sudah = cart.filter(function(c){ return c.varianId === varian.id; }).reduce(function(a,c){ return a + c.qty; }, 0);
+    if(sudah + qty > varian.stok){
+      showToast('Stok "' + produk.nama + ' — ' + varian.warna + '" tidak cukup. Sisa stok: ' + (varian.stok - sudah), 'error');
+      return;
+    }
+    var existing = cart.find(function(c){ return c.varianId === varian.id; });
+    if(existing){
+      existing.qty += qty;
+      existing.subtotal = existing.qty * existing.harga;
+    } else {
+      cart.push({ produkId: produk.id, varianId: varian.id, nama: produk.nama, warna: varian.warna, harga: produk.harga, qty: qty, subtotal: produk.harga * qty });
+    }
+    renderPenjualan();
+  }
+
+  function removeFromCart(idx){
+    cart.splice(idx, 1);
+    renderPenjualan();
+  }
+
+  function submitTransaksi(){
+    if(cart.length === 0){ showToast('Keranjang masih kosong.', 'error'); return; }
+    var tanggalInput = document.getElementById('tanggalInput');
+    var tanggal = (tanggalInput && tanggalInput.value) ? tanggalInput.value : penjualanTanggal;
+
+    for(var i=0;i<cart.length;i++){
+      var item = cart[i];
+      var found = findVarian(item.produkId, item.varianId);
+      if(!found || item.qty > found.varian.stok){
+        showToast('Stok "' + item.nama + ' — ' + item.warna + '" sudah berubah. Periksa kembali keranjang Anda.', 'error');
+        return;
+      }
+    }
+    cart.forEach(function(item){
+      var found = findVarian(item.produkId, item.varianId);
+      found.varian.stok -= item.qty;
+    });
+    var total = cart.reduce(function(a,i){ return a + i.subtotal; }, 0);
+    state.transaksi.unshift({ id: generateTrxId(tanggal), tanggal: tanggal, items: cart.slice(), total: total });
+    cart = [];
+    penjualanTanggal = todayIso();
+    persist().then(function(){
+      renderAll();
+      showToast('Transaksi berhasil disimpan. Stok telah diperbarui.', 'success');
+    });
+  }
+
+  /* ---------- CSV import ---------- */
+  function parseCsvLine(line){
+    return line.split(',').map(function(s){ return s.trim().replace(/^"|"$/g,''); });
+  }
+
+  function handleCsvFile(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var text = String(e.target.result || '');
+      var lines = text.split(/\r?\n/).filter(function(l){ return l.trim().length > 0; });
+      if(lines.length < 2){ showToast('File CSV kosong atau tidak valid.', 'error'); return; }
+      var header = parseCsvLine(lines[0]).map(function(h){ return h.toLowerCase(); });
+      var idxNama = header.indexOf('nama_produk');
+      var idxWarna = header.indexOf('warna');
+      var idxQty = header.indexOf('qty');
+      var idxTanggal = header.indexOf('tanggal');
+      if(idxNama === -1 || idxQty === -1){
+        showToast('Format CSV tidak sesuai. Gunakan template yang disediakan.', 'error');
+        return;
+      }
+      var berhasil = 0, gagal = 0, errors = [];
+      var byDate = {};
+      for(var i=1;i<lines.length;i++){
+        var cols = parseCsvLine(lines[i]);
+        var nama = cols[idxNama] || '';
+        var warnaInput = (idxWarna !== -1 ? (cols[idxWarna] || '') : '').trim();
+        var qty = parseInt(cols[idxQty], 10);
+        var tanggal = (idxTanggal !== -1 && cols[idxTanggal]) ? normalizeDate(cols[idxTanggal]) : todayIso();
+        var produk = state.produk.find(function(p){ return p.nama.toLowerCase() === nama.toLowerCase(); });
+        if(!produk){ gagal++; errors.push('Baris ' + (i+1) + ': produk "' + nama + '" tidak ditemukan'); continue; }
+        var varianList = produk.varian || [];
+        var varian = null;
+        if(warnaInput){
+          varian = varianList.find(function(v){ return v.warna.toLowerCase() === warnaInput.toLowerCase(); });
+          if(!varian){ gagal++; errors.push('Baris ' + (i+1) + ': warna "' + warnaInput + '" untuk "' + nama + '" tidak ditemukan'); continue; }
+        } else if(varianList.length === 1){
+          varian = varianList[0];
+        } else {
+          gagal++; errors.push('Baris ' + (i+1) + ': kolom warna wajib diisi karena "' + nama + '" punya beberapa warna'); continue;
+        }
+        if(!qty || qty <= 0){ gagal++; errors.push('Baris ' + (i+1) + ': qty tidak valid'); continue; }
+        if(!byDate[tanggal]) byDate[tanggal] = [];
+        var sudahQueued = byDate[tanggal].filter(function(it){ return it.varianId === varian.id; }).reduce(function(a,it){ return a + it.qty; }, 0);
+        if(sudahQueued + qty > varian.stok){ gagal++; errors.push('Baris ' + (i+1) + ': stok "' + produk.nama + ' — ' + varian.warna + '" tidak cukup'); continue; }
+        byDate[tanggal].push({ produkId: produk.id, varianId: varian.id, nama: produk.nama, warna: varian.warna, harga: produk.harga, qty: qty, subtotal: produk.harga * qty });
+        berhasil++;
+      }
+      Object.keys(byDate).forEach(function(tanggal){
+        var items = byDate[tanggal];
+        if(items.length === 0) return;
+        items.forEach(function(it){
+          var found = findVarian(it.produkId, it.varianId);
+          if(found) found.varian.stok -= it.qty;
+        });
+        var total = items.reduce(function(a,it){ return a + it.subtotal; }, 0);
+        state.transaksi.unshift({ id: generateTrxId(tanggal), tanggal: tanggal, items: items, total: total });
+      });
+      persist().then(function(){
+        renderAll();
+        showToast('Impor selesai: ' + berhasil + ' baris berhasil, ' + gagal + ' baris gagal.', gagal > 0 ? 'warning' : 'success');
+        if(errors.length) console.warn(errors.join('\n'));
+      });
+    };
+    reader.readAsText(file);
+  }
+
+  function downloadCsvTemplate(){
+    var csv = 'nama_produk,warna,qty,tanggal\nPashmina Ceruty Premium,Maroon,2,' + todayIso() + '\nBergo Instan Rabbani,Hitam,1,' + todayIso() + '\n';
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'template-penjualan.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ---------- Laporan ---------- */
+  function getFilteredLaporanRows(){
+    var rows = [];
+    state.transaksi.forEach(function(t){
+      if(t.tanggal < laporanFilter.dari || t.tanggal > laporanFilter.sampai) return;
+      t.items.forEach(function(item){
+        rows.push({ trxId: t.id, tanggal: t.tanggal, nama: item.nama, warna: item.warna || '-', qty: item.qty, harga: item.harga, subtotal: item.subtotal });
+      });
+    });
+    rows.sort(function(a,b){ return a.tanggal < b.tanggal ? 1 : -1; });
+    return rows;
+  }
+
+  function renderLaporan(){
+    var panel = document.getElementById('panel-laporan');
+    var rows = getFilteredLaporanRows();
+    var totalPendapatan = rows.reduce(function(a,r){ return a + r.subtotal; }, 0);
+    var totalItem = rows.reduce(function(a,r){ return a + r.qty; }, 0);
+    var totalTrx = new Set(rows.map(function(r){ return r.trxId; })).size;
+
+    var body = rows.length === 0
+      ? '<tr><td colspan="7" class="empty-note">Tidak ada transaksi pada rentang tanggal ini.</td></tr>'
+      : rows.map(function(r){
+          return '<tr>' +
+            '<td>' + r.trxId + '</td>' +
+            '<td>' + formatTanggal(r.tanggal) + '</td>' +
+            '<td>' + escapeHtml(r.nama) + '</td>' +
+            '<td>' + escapeHtml(r.warna) + '</td>' +
+            '<td class="num">' + r.qty + '</td>' +
+            '<td class="num">' + rupiah(r.harga) + '</td>' +
+            '<td class="num">' + rupiah(r.subtotal) + '</td>' +
+          '</tr>';
+        }).join('');
+
+    panel.innerHTML =
+      '<div class="toolbar">' +
+        '<div class="toolbar-left">' +
+          '<div class="field" style="margin-bottom:0;"><label>Dari Tanggal</label><input type="date" id="dariInput" value="' + laporanFilter.dari + '"></div>' +
+          '<div class="field" style="margin-bottom:0;"><label>Sampai Tanggal</label><input type="date" id="sampaiInput" value="' + laporanFilter.sampai + '"></div>' +
+        '</div>' +
+        '<div class="toolbar-left">' +
+          '<button class="btn btn-secondary" data-action="export-penjualan-excel">Unduh Excel</button>' +
+          '<button class="btn btn-secondary" data-action="export-penjualan-pdf">Unduh PDF</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="summary-bar">' +
+        '<div class="summary-chip">Total Transaksi <b>' + totalTrx + '</b></div>' +
+        '<div class="summary-chip">Item Terjual <b>' + totalItem + '</b></div>' +
+        '<div class="summary-chip">Total Pendapatan <b>' + rupiah(totalPendapatan) + '</b></div>' +
+      '</div>' +
+      '<div class="table-wrap"><table>' +
+        '<thead><tr><th>ID Transaksi</th><th>Tanggal</th><th>Produk</th><th>Warna</th><th class="num">Qty</th><th class="num">Harga</th><th class="num">Subtotal</th></tr></thead>' +
+        '<tbody>' + body + '</tbody>' +
+      '</table></div>';
+  }
+
+  /* ---------- Analitik Penjualan ---------- */
+  var ANALITIK_LABEL = { harian: 'Harian', mingguan: 'Mingguan', bulanan: 'Bulanan' };
+
+  function getSalesItemRows(dari, sampai){
+    var rows = [];
+    state.transaksi.forEach(function(t){
+      if(t.tanggal < dari || t.tanggal > sampai) return;
+      t.items.forEach(function(item){
+        rows.push({
+          tanggal: t.tanggal, produkId: item.produkId, varianId: item.varianId,
+          nama: item.nama, warna: item.warna || '-', qty: item.qty, subtotal: item.subtotal
+        });
+      });
+    });
+    return rows;
+  }
+
+  function aggregatePeriode(rows, granularitas){
+    var map = {};
+    rows.forEach(function(r){
+      var key, label, sortKey;
+      if(granularitas === 'mingguan'){
+        key = startOfWeekIso(r.tanggal);
+        label = 'Mgg ' + formatTanggalPendek(key);
+        sortKey = key;
+      } else if(granularitas === 'bulanan'){
+        key = r.tanggal.slice(0,7);
+        label = formatBulanTahunPendek(r.tanggal);
+        sortKey = key + '-01';
+      } else {
+        key = r.tanggal;
+        label = formatTanggalPendek(r.tanggal);
+        sortKey = r.tanggal;
+      }
+      if(!map[key]) map[key] = { key: key, label: label, total: 0, qty: 0, sortKey: sortKey };
+      map[key].total += r.subtotal;
+      map[key].qty += r.qty;
+    });
+    var arr = Object.keys(map).map(function(k){ return map[k]; });
+    arr.sort(function(a,b){ return a.sortKey < b.sortKey ? -1 : (a.sortKey > b.sortKey ? 1 : 0); });
+    return arr;
+  }
+
+  function aggregateTopVarian(rows, limit){
+    var map = {};
+    rows.forEach(function(r){
+      var key = r.produkId + '::' + (r.varianId || '-');
+      if(!map[key]) map[key] = { produkId: r.produkId, varianId: r.varianId, nama: r.nama, warna: r.warna, qty: 0, total: 0 };
+      map[key].qty += r.qty;
+      map[key].total += r.subtotal;
+    });
+    var arr = Object.keys(map).map(function(k){ return map[k]; });
+    arr.sort(function(a,b){ return b.qty - a.qty; });
+    return limit ? arr.slice(0, limit) : arr;
+  }
+
+  function aggregateTopJenis(rows, limit){
+    var map = {};
+    rows.forEach(function(r){
+      if(!map[r.produkId]) map[r.produkId] = { produkId: r.produkId, nama: r.nama, qty: 0, total: 0 };
+      map[r.produkId].qty += r.qty;
+      map[r.produkId].total += r.subtotal;
+    });
+    var arr = Object.keys(map).map(function(k){ return map[k]; });
+    arr.sort(function(a,b){ return b.qty - a.qty; });
+    return limit ? arr.slice(0, limit) : arr;
+  }
+
+  function restockSignal(qtyTerjual, stokSaatIni, status){
+    if(status === 'habis' && qtyTerjual > 0) return 'Laris & stok habis — prioritas beli';
+    if(status === 'menipis' && qtyTerjual > 0) return 'Laris & stok menipis — sebaiknya beli';
+    if(status !== 'tersedia') return rekomendasiBeli(status);
+    return 'Stok masih aman';
+  }
+
+  function svgBarChart(data, opts){
+    opts = opts || {};
+    var width = opts.width || 720, height = opts.height || 240;
+    var padding = { top: 14, right: 14, bottom: 40, left: 50 };
+    var chartW = Math.max(10, width - padding.left - padding.right);
+    var chartH = Math.max(10, height - padding.top - padding.bottom);
+    var maxVal = data.reduce(function(m,d){ return Math.max(m, d.value); }, 0);
+    if(maxVal <= 0) maxVal = 1;
+    var n = data.length;
+    var gap = n > 20 ? 3 : 8;
+    var barW = n ? Math.max(4, (chartW / n) - gap) : 0;
+    var showLabelEvery = n > 14 ? Math.ceil(n / 14) : 1;
+
+    var gridSvg = '';
+    for(var g=0; g<=4; g++){
+      var gy = padding.top + chartH - (chartH * g/4);
+      var val = maxVal * g/4;
+      gridSvg += '<line x1="' + padding.left + '" y1="' + gy.toFixed(1) + '" x2="' + (width-padding.right) + '" y2="' + gy.toFixed(1) + '" stroke="#EDE0DE" stroke-width="1"/>' +
+        '<text x="' + (padding.left-8) + '" y="' + (gy+3).toFixed(1) + '" font-size="9.5" text-anchor="end" fill="#8B7680" font-family="IBM Plex Mono, monospace">' + formatCompactNumber(val) + '</text>';
+    }
+
+    var barsSvg = data.map(function(d, i){
+      var barH = (d.value / maxVal) * chartH;
+      var x = padding.left + i * (barW + gap);
+      var y = padding.top + (chartH - barH);
+      var labelSvg = (i % showLabelEvery === 0)
+        ? '<text x="' + (x+barW/2).toFixed(1) + '" y="' + (padding.top+chartH+16).toFixed(1) + '" font-size="9" text-anchor="middle" fill="#8B7680" font-family="Plus Jakarta Sans, sans-serif">' + escapeHtml(d.label) + '</text>'
+        : '';
+      return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH,1).toFixed(1) + '" rx="3" fill="#B8697A">' +
+        '<title>' + escapeHtml(d.label) + ': ' + escapeHtml(d.valueLabel) + '</title></rect>' + labelSvg;
+    }).join('');
+
+    return '<svg viewBox="0 0 ' + width + ' ' + height + '" class="chart-svg" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Grafik tren penjualan">' + gridSvg + barsSvg + '</svg>';
+  }
+
+  function renderAnalitik(){
+    var panel = document.getElementById('panel-analitik');
+    var rows = getSalesItemRows(analitikFilter.dari, analitikFilter.sampai);
+    var totalPendapatan = rows.reduce(function(a,r){ return a + r.subtotal; }, 0);
+    var totalItem = rows.reduce(function(a,r){ return a + r.qty; }, 0);
+    var periodeData = aggregatePeriode(rows, analitikGranularitas);
+    var topJenis = aggregateTopJenis(rows, 5);
+    var topVarian = aggregateTopVarian(rows, 8);
+
+    var chartData = periodeData.map(function(d){
+      return { label: d.label, value: d.total, valueLabel: rupiah(d.total) };
+    });
+    var chartHtml = chartData.length === 0
+      ? '<p class="empty-note">Belum ada data penjualan pada rentang tanggal ini.</p>'
+      : svgBarChart(chartData);
+
+    var terlarisChip = topVarian.length
+      ? escapeHtml(topVarian[0].nama) + ' — ' + escapeHtml(topVarian[0].warna) + ' (' + topVarian[0].qty + ' pcs)'
+      : '—';
+
+    var topJenisHtml = topJenis.length === 0
+      ? '<p class="empty-note">Belum ada penjualan pada rentang tanggal ini.</p>'
+      : (function(){
+          var maxQty = topJenis[0].qty || 1;
+          return topJenis.map(function(t, idx){
+            var pct = Math.max(4, Math.round((t.qty / maxQty) * 100));
+            return '<div class="mini-row"><span class="mini-row-name">' + (idx+1) + '. ' + escapeHtml(t.nama) + '</span>' +
+              '<div class="rank-bar"><div class="rank-bar-track"><div class="rank-bar-fill" style="width:' + pct + '%"></div></div>' +
+              '<span class="stock-num">' + t.qty + ' pcs</span></div></div>';
+          }).join('');
+        })();
+
+    var varianRows = topVarian.length === 0
+      ? '<tr><td colspan="7" class="empty-note">Belum ada penjualan pada rentang tanggal ini.</td></tr>'
+      : topVarian.map(function(t, idx){
+          var found = findVarian(t.produkId, t.varianId);
+          var stokSaatIni = found ? found.varian.stok : 0;
+          var status = found ? varianStockStatus(found.varian, found.produk.stokMin) : 'habis';
+          var sinyal = restockSignal(t.qty, stokSaatIni, status);
+          var sinyalClass = (status !== 'tersedia' && t.qty > 0) ? 'badge-menipis' : 'badge-tersedia';
+          return '<tr>' +
+            '<td>' + (idx+1) + '</td>' +
+            '<td>' + escapeHtml(t.nama) + '</td>' +
+            '<td>' + escapeHtml(t.warna) + '</td>' +
+            '<td class="num">' + t.qty + '</td>' +
+            '<td class="num">' + rupiah(t.total) + '</td>' +
+            '<td class="num">' + stokSaatIni + '</td>' +
+            '<td><span class="badge ' + sinyalClass + '" style="white-space:normal; text-align:left;">' + escapeHtml(sinyal) + '</span></td>' +
+          '</tr>';
+        }).join('');
+
+    var granularitasBtns = ['harian','mingguan','bulanan'].map(function(g){
+      return '<button class="btn btn-sm ' + (analitikGranularitas===g ? 'btn-primary' : 'btn-ghost') + '" data-action="set-granularitas" data-granularitas="' + g + '">' + ANALITIK_LABEL[g] + '</button>';
+    }).join(' ');
+
+    panel.innerHTML =
+      '<div class="toolbar">' +
+        '<div class="toolbar-left">' + granularitasBtns + '</div>' +
+        '<div class="toolbar-left">' +
+          '<div class="field" style="margin-bottom:0;"><label>Dari Tanggal</label><input type="date" id="analitikDariInput" value="' + analitikFilter.dari + '"></div>' +
+          '<div class="field" style="margin-bottom:0;"><label>Sampai Tanggal</label><input type="date" id="analitikSampaiInput" value="' + analitikFilter.sampai + '"></div>' +
+        '</div>' +
+        '<div class="toolbar-left">' +
+          '<button class="btn btn-secondary" data-action="export-analitik-excel">Unduh Excel</button>' +
+          '<button class="btn btn-secondary" data-action="export-analitik-pdf">Unduh PDF</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="summary-bar">' +
+        '<div class="summary-chip">Total Pendapatan <b>' + rupiah(totalPendapatan) + '</b></div>' +
+        '<div class="summary-chip">Item Terjual <b>' + totalItem + '</b></div>' +
+        '<div class="summary-chip">Paling Laris <b>' + terlarisChip + '</b></div>' +
+      '</div>' +
+      '<div class="panel-card" style="margin-bottom:18px;"><h3>Tren Penjualan (' + ANALITIK_LABEL[analitikGranularitas] + ')</h3><div class="chart-wrap">' + chartHtml + '</div></div>' +
+      '<div class="dash-grid" style="margin-bottom:18px;">' +
+        '<div class="panel-card"><h3>Top 5 Jenis Kerudung Paling Laris</h3>' + topJenisHtml + '</div>' +
+        '<div class="panel-card"><h3>Catatan untuk Pembelian Stok</h3>' +
+          '<p class="empty-note" style="padding:2px 0 10px;">Kombinasi warna yang laris namun stoknya menipis/habis sebaiknya diprioritaskan untuk dibeli ulang. Lihat tabel di bawah untuk rincian tiap warna.</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="table-wrap"><table>' +
+        '<thead><tr><th>No</th><th>Jenis Kerudung</th><th>Warna</th><th class="num">Qty Terjual</th><th class="num">Pendapatan</th><th class="num">Stok Saat Ini</th><th>Sinyal Pembelian</th></tr></thead>' +
+        '<tbody>' + varianRows + '</tbody>' +
+      '</table></div>';
+  }
+
+  function setGranularitas(g){
+    analitikGranularitas = g;
+    renderAnalitik();
+  }
+
+  /* ---------- Export: Analitik ---------- */
+  function exportAnalitikExcel(){
+    if(typeof XLSX === 'undefined'){ showToast('Pustaka Excel belum siap, coba lagi sebentar.', 'error'); return; }
+    var rows = getSalesItemRows(analitikFilter.dari, analitikFilter.sampai);
+    var periodeData = aggregatePeriode(rows, analitikGranularitas);
+    var topVarian = aggregateTopVarian(rows, 0);
+
+    var sheetTren = periodeData.map(function(d){
+      return { 'Periode': d.label, 'Qty Terjual': d.qty, 'Total Pendapatan': d.total };
+    });
+    var sheetTerlaris = topVarian.map(function(t, i){
+      var found = findVarian(t.produkId, t.varianId);
+      var stokSaatIni = found ? found.varian.stok : 0;
+      var status = found ? varianStockStatus(found.varian, found.produk.stokMin) : 'habis';
+      return {
+        'Peringkat': i+1, 'Jenis Kerudung': t.nama, 'Warna': t.warna,
+        'Qty Terjual': t.qty, 'Total Pendapatan': t.total,
+        'Stok Saat Ini': stokSaatIni, 'Sinyal Pembelian': restockSignal(t.qty, stokSaatIni, status)
+      };
+    });
+
+    var wb = XLSX.utils.book_new();
+    var ws1 = XLSX.utils.json_to_sheet(sheetTren);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Tren ' + ANALITIK_LABEL[analitikGranularitas]);
+    var ws2 = XLSX.utils.json_to_sheet(sheetTerlaris);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Produk Terlaris');
+    XLSX.writeFile(wb, 'analitik-penjualan-' + analitikFilter.dari + '_' + analitikFilter.sampai + '.xlsx');
+  }
+
+  function exportAnalitikPDF(){
+    if(typeof window.jspdf === 'undefined'){ showToast('Pustaka PDF belum siap, coba lagi sebentar.', 'error'); return; }
+    var doc = new window.jspdf.jsPDF();
+    var rows = getSalesItemRows(analitikFilter.dari, analitikFilter.sampai);
+    var periodeData = aggregatePeriode(rows, analitikGranularitas);
+    var topVarian = aggregateTopVarian(rows, 15);
+
+    doc.setFontSize(16); doc.text('Analitik Penjualan', 14, 18);
+    doc.setFontSize(10); doc.setTextColor(120);
+    doc.text('Toko: The Buyungs', 14, 25);
+    doc.text('Periode: ' + formatTanggal(analitikFilter.dari) + ' - ' + formatTanggal(analitikFilter.sampai) + ' (' + ANALITIK_LABEL[analitikGranularitas] + ')', 14, 30);
+    doc.text('Dicetak: ' + new Date().toLocaleString('id-ID'), 14, 35);
+
+    doc.setFontSize(12); doc.setTextColor(40);
+    doc.text('1. Tren Penjualan per Periode', 14, 45);
+    var trenBody = periodeData.map(function(d){ return [d.label, d.qty, rupiah(d.total)]; });
+    doc.autoTable({
+      startY: 49,
+      head: [['Periode','Qty Terjual','Total Pendapatan']],
+      body: trenBody,
+      headStyles: { fillColor: [184,105,122] },
+      styles: { fontSize: 8.5 }
+    });
+
+    var afterY = doc.lastAutoTable.finalY + 14;
+    doc.setFontSize(12);
+    doc.text('2. Produk Paling Laris (untuk keputusan beli stok)', 14, afterY);
+    var terlarisBody = topVarian.map(function(t, i){
+      var found = findVarian(t.produkId, t.varianId);
+      var stokSaatIni = found ? found.varian.stok : 0;
+      var status = found ? varianStockStatus(found.varian, found.produk.stokMin) : 'habis';
+      return [i+1, t.nama, t.warna, t.qty, rupiah(t.total), stokSaatIni, restockSignal(t.qty, stokSaatIni, status)];
+    });
+    doc.autoTable({
+      startY: afterY + 4,
+      head: [['No','Jenis','Warna','Qty','Pendapatan','Stok Saat Ini','Sinyal Pembelian']],
+      body: terlarisBody,
+      headStyles: { fillColor: [143,163,119] },
+      styles: { fontSize: 8 }
+    });
+    doc.save('analitik-penjualan-' + analitikFilter.dari + '_' + analitikFilter.sampai + '.pdf');
+  }
+  function exportStokExcel(){
+    if(typeof XLSX === 'undefined'){ showToast('Pustaka Excel belum siap, coba lagi sebentar.', 'error'); return; }
+
+    // Sheet 1: Ringkasan per jenis kerudung (total stok gabungan semua warna)
+    var ringkasan = state.produk.map(function(p){
+      var status = jenisStatus(p);
+      return {
+        'Jenis Kerudung': p.nama,
+        'Kategori': p.kategori,
+        'SKU Jenis': p.sku || '',
+        'Jumlah Varian Warna': (p.varian||[]).length,
+        'Total Stok (semua warna)': totalStok(p),
+        'Harga Satuan': p.harga,
+        'Nilai Stok': totalNilai(p),
+        'Status': stockStatusLabel(status),
+        'Rekomendasi': rekomendasiBeli(status)
+      };
+    });
+
+    // Sheet 2: Rincian stok per warna, masing-masing dengan SKU sendiri
+    var detail = [];
+    state.produk.forEach(function(p){
+      (p.varian||[]).forEach(function(v){
+        var vStatus = varianStockStatus(v, p.stokMin);
+        detail.push({
+          'Jenis Kerudung': p.nama,
+          'Kategori': p.kategori,
+          'Warna': v.warna,
+          'SKU Warna': v.sku || '',
+          'Stok': v.stok,
+          'Batas Stok Menipis': p.stokMin,
+          'Harga Satuan': p.harga,
+          'Nilai Stok': v.stok * p.harga,
+          'Status': stockStatusLabel(vStatus),
+          'Rekomendasi Pembelian': rekomendasiBeli(vStatus)
+        });
+      });
+    });
+
+    var wb = XLSX.utils.book_new();
+    var ws1 = XLSX.utils.json_to_sheet(ringkasan);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Ringkasan per Jenis');
+    var ws2 = XLSX.utils.json_to_sheet(detail);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detail per Warna');
+    XLSX.writeFile(wb, 'laporan-stok-' + todayIso() + '.xlsx');
+  }
+
+  function exportStokPDF(){
+    if(typeof window.jspdf === 'undefined'){ showToast('Pustaka PDF belum siap, coba lagi sebentar.', 'error'); return; }
+    var doc = new window.jspdf.jsPDF();
+    doc.setFontSize(16); doc.text('Laporan Stok Produk', 14, 18);
+    doc.setFontSize(10); doc.setTextColor(120);
+    doc.text('Toko: The Buyungs', 14, 25);
+    doc.text('Dicetak: ' + new Date().toLocaleString('id-ID'), 14, 30);
+
+    doc.setFontSize(12); doc.setTextColor(40);
+    doc.text('1. Ringkasan Total Stok per Jenis Kerudung', 14, 40);
+    var ringkasanBody = state.produk.map(function(p, i){
+      var status = jenisStatus(p);
+      return [i+1, p.nama, p.sku || '-', (p.varian||[]).length, totalStok(p), rupiah(totalNilai(p)), stockStatusLabel(status)];
+    });
+    doc.autoTable({
+      startY: 44,
+      head: [['No','Jenis Kerudung','SKU Jenis','Jml Warna','Total Stok','Nilai Stok','Status']],
+      body: ringkasanBody,
+      headStyles: { fillColor: [184,105,122] },
+      styles: { fontSize: 8.5 }
+    });
+
+    var afterY = doc.lastAutoTable.finalY + 14;
+    doc.setFontSize(12);
+    doc.text('2. Rincian Stok per Warna (untuk keputusan pembelian)', 14, afterY);
+    var detailBody = [];
+    state.produk.forEach(function(p){
+      (p.varian||[]).forEach(function(v){
+        var vStatus = varianStockStatus(v, p.stokMin);
+        detailBody.push([p.nama, v.warna, v.sku || '-', v.stok, stockStatusLabel(vStatus), rekomendasiBeli(vStatus)]);
+      });
+    });
+    doc.autoTable({
+      startY: afterY + 4,
+      head: [['Jenis Kerudung','Warna','SKU Warna','Stok','Status','Rekomendasi']],
+      body: detailBody,
+      headStyles: { fillColor: [143,163,119] },
+      styles: { fontSize: 8.5 },
+      didParseCell: function(hookData){
+        if(hookData.section === 'body' && hookData.column.index === 4){
+          var val = hookData.cell.raw;
+          if(val === 'Habis') hookData.cell.styles.textColor = [142,61,57];
+          else if(val === 'Menipis') hookData.cell.styles.textColor = [143,99,35];
+        }
+      }
+    });
+    doc.save('laporan-stok-' + todayIso() + '.pdf');
+  }
+
+  /* ---------- Export: Penjualan ---------- */
+  function exportPenjualanExcel(){
+    if(typeof XLSX === 'undefined'){ showToast('Pustaka Excel belum siap, coba lagi sebentar.', 'error'); return; }
+    var rows = getFilteredLaporanRows();
+    var data = rows.map(function(r, i){
+      return {
+        'No': i+1, 'ID Transaksi': r.trxId, 'Tanggal': formatTanggal(r.tanggal),
+        'Produk': r.nama, 'Warna': r.warna, 'Qty': r.qty, 'Harga Satuan': r.harga, 'Subtotal': r.subtotal
+      };
+    });
+    var ws = XLSX.utils.json_to_sheet(data);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Penjualan');
+    var totalPendapatan = rows.reduce(function(a,r){ return a + r.subtotal; }, 0);
+    var totalItem = rows.reduce(function(a,r){ return a + r.qty; }, 0);
+    var ringkasan = [
+      { Keterangan: 'Periode', Nilai: laporanFilter.dari + ' s/d ' + laporanFilter.sampai },
+      { Keterangan: 'Total Transaksi', Nilai: new Set(rows.map(function(r){ return r.trxId; })).size },
+      { Keterangan: 'Total Item Terjual', Nilai: totalItem },
+      { Keterangan: 'Total Pendapatan', Nilai: totalPendapatan }
+    ];
+    var ws2 = XLSX.utils.json_to_sheet(ringkasan);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Ringkasan');
+    XLSX.writeFile(wb, 'laporan-penjualan-' + laporanFilter.dari + '_' + laporanFilter.sampai + '.xlsx');
+  }
+
+  function exportPenjualanPDF(){
+    if(typeof window.jspdf === 'undefined'){ showToast('Pustaka PDF belum siap, coba lagi sebentar.', 'error'); return; }
+    var doc = new window.jspdf.jsPDF();
+    var rows = getFilteredLaporanRows();
+    doc.setFontSize(16); doc.text('Laporan Penjualan', 14, 18);
+    doc.setFontSize(10); doc.setTextColor(120);
+    doc.text('Toko: The Buyungs', 14, 25);
+    doc.text('Periode: ' + formatTanggal(laporanFilter.dari) + ' - ' + formatTanggal(laporanFilter.sampai), 14, 30);
+    doc.text('Dicetak: ' + new Date().toLocaleString('id-ID'), 14, 35);
+    var totalPendapatan = rows.reduce(function(a,r){ return a + r.subtotal; }, 0);
+    var body = rows.map(function(r, i){
+      return [i+1, r.trxId, formatTanggal(r.tanggal), r.nama, r.warna, r.qty, rupiah(r.harga), rupiah(r.subtotal)];
+    });
+    doc.autoTable({
+      startY: 41,
+      head: [['No','ID Transaksi','Tanggal','Produk','Warna','Qty','Harga Satuan','Subtotal']],
+      body: body,
+      foot: [['','','','','','','Total', rupiah(totalPendapatan)]],
+      headStyles: { fillColor: [184,105,122] },
+      footStyles: { fillColor: [59,39,51], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9 }
+    });
+    doc.save('laporan-penjualan-' + laporanFilter.dari + '_' + laporanFilter.sampai + '.pdf');
+  }
+
+  /* ---------- Produk modal ---------- */
+  var modalVarian = []; // { id, warna, sku, stok } sedang diedit di dalam modal
+
+  function renderVarianList(){
+    var container = document.getElementById('varianList');
+    if(modalVarian.length === 0){
+      container.innerHTML = '<p class="empty-note" style="padding:4px 0;">Belum ada warna. Klik "+ Tambah Warna".</p>';
+      return;
+    }
+    container.innerHTML = modalVarian.map(function(v, idx){
+      return '<div class="varian-item" data-idx="' + idx + '">' +
+        '<input type="text" class="varian-warna" placeholder="Nama warna (mis. Maroon)" value="' + escapeHtml(v.warna) + '">' +
+        '<input type="text" class="varian-sku" placeholder="SKU warna (mis. PSH-001-MRN)" value="' + escapeHtml(v.sku) + '">' +
+        '<input type="number" class="varian-stok" min="0" step="1" placeholder="Stok" value="' + v.stok + '">' +
+        '<button type="button" class="varian-remove-btn" data-idx="' + idx + '" title="Hapus warna ini">✕</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function syncVarianFromDom(){
+    document.querySelectorAll('#varianList .varian-item').forEach(function(row){
+      var idx = Number(row.dataset.idx);
+      if(!modalVarian[idx]) return;
+      modalVarian[idx].warna = row.querySelector('.varian-warna').value.trim();
+      modalVarian[idx].sku = row.querySelector('.varian-sku').value.trim();
+      modalVarian[idx].stok = Number(row.querySelector('.varian-stok').value);
+    });
+  }
+
+  function addVarianRow(){
+    syncVarianFromDom();
+    modalVarian.push({ id: genId('v'), warna: '', sku: '', stok: 0 });
+    renderVarianList();
+    var rows = document.querySelectorAll('#varianList .varian-warna');
+    if(rows.length) rows[rows.length-1].focus();
+  }
+
+  function removeVarianRow(idx){
+    syncVarianFromDom();
+    modalVarian.splice(idx, 1);
+    renderVarianList();
+  }
+
+  function openProdukModal(id){
+    var overlay = document.getElementById('modalOverlay');
+    var form = document.getElementById('produkForm');
+    var title = document.getElementById('modalTitle');
+    form.reset();
+    if(id){
+      var p = state.produk.find(function(pp){ return pp.id === id; });
+      if(!p) return;
+      title.textContent = 'Edit Produk';
+      form.dataset.editId = id;
+      form.nama.value = p.nama;
+      form.kategori.value = p.kategori;
+      form.sku.value = p.sku || '';
+      form.harga.value = p.harga;
+      form.stokMin.value = p.stokMin;
+      modalVarian = (p.varian||[]).map(function(v){ return { id: v.id, warna: v.warna, sku: v.sku, stok: v.stok }; });
+    } else {
+      title.textContent = 'Tambah Produk';
+      delete form.dataset.editId;
+      form.stokMin.value = 5;
+      modalVarian = [{ id: genId('v'), warna: '', sku: '', stok: 0 }];
+    }
+    renderVarianList();
+    overlay.hidden = false;
+    form.nama.focus();
+  }
+
+  function closeModal(){
+    document.getElementById('modalOverlay').hidden = true;
+    modalVarian = [];
+  }
+
+  function submitProdukForm(e){
+    e.preventDefault();
+    syncVarianFromDom();
+    var form = e.target;
+    var data = {
+      nama: form.nama.value.trim(),
+      kategori: form.kategori.value.trim() || 'Umum',
+      sku: form.sku.value.trim(),
+      harga: Number(form.harga.value),
+      stokMin: Number(form.stokMin.value) || 5
+    };
+    if(!data.nama || isNaN(data.harga) || data.harga < 0){
+      showToast('Periksa kembali data yang diisi.', 'error');
+      return;
+    }
+    var varianBersih = modalVarian
+      .filter(function(v){ return v.warna; })
+      .map(function(v){ return { id: v.id, warna: v.warna, sku: v.sku, stok: (isNaN(v.stok) || v.stok < 0) ? 0 : Math.round(v.stok) }; });
+    if(varianBersih.length === 0){
+      showToast('Tambahkan minimal satu warna beserta stoknya.', 'error');
+      return;
+    }
+    var skuSet = {};
+    for(var i=0;i<varianBersih.length;i++){
+      var s = (varianBersih[i].sku || '').toLowerCase();
+      if(s){
+        if(skuSet[s]){ showToast('SKU warna "' + varianBersih[i].sku + '" duplikat, gunakan SKU unik tiap warna.', 'error'); return; }
+        skuSet[s] = true;
+      }
+    }
+    data.varian = varianBersih;
+
+    var editId = form.dataset.editId;
+    if(editId){
+      var p = state.produk.find(function(pp){ return pp.id === editId; });
+      Object.assign(p, data);
+      showToast('Produk berhasil diperbarui.', 'success');
+    } else {
+      state.produk.push(Object.assign({ id: genId('p') }, data));
+      showToast('Produk berhasil ditambahkan.', 'success');
+    }
+    persist().then(function(){
+      closeModal();
+      renderAll();
+    });
+  }
+
+  function handleDeleteProduk(id){
+    var p = state.produk.find(function(pp){ return pp.id === id; });
+    if(!p) return;
+    showConfirm('Hapus produk "' + p.nama + '"? Riwayat transaksi tetap tersimpan, namun tindakan ini tidak dapat dibatalkan.').then(function(ok){
+      if(!ok) return;
+      state.produk = state.produk.filter(function(pp){ return pp.id !== id; });
+      persist().then(function(){
+        renderAll();
+        showToast('Produk dihapus.', 'success');
+      });
+    });
+  }
+
+  function handleResetData(){
+    showConfirm('Hapus SEMUA data produk dan transaksi? Tindakan ini tidak dapat dibatalkan.').then(function(ok){
+      if(!ok) return;
+      state.produk = [];
+      state.transaksi = [];
+      cart = [];
+      persist().then(function(){
+        renderAll();
+        showToast('Semua data telah dihapus.', 'success');
+      });
+    });
+  }
+
+  /* ---------- Event wiring ---------- */
+  function bindStaticEvents(){
+    document.getElementById('navList').addEventListener('click', function(e){
+      var btn = e.target.closest('.nav-item');
+      if(btn) switchTab(btn.dataset.tab);
+    });
+
+    document.getElementById('produkForm').addEventListener('submit', submitProdukForm);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', function(e){
+      if(e.target.id === 'modalOverlay'){ closeModal(); return; }
+      if(e.target.closest('#addVarianBtn')){ addVarianRow(); return; }
+      var removeBtn = e.target.closest('.varian-remove-btn');
+      if(removeBtn){ removeVarianRow(Number(removeBtn.dataset.idx)); return; }
+    });
+    document.getElementById('resetBtn').addEventListener('click', handleResetData);
+
+    document.getElementById('content').addEventListener('click', function(e){
+      var btn = e.target.closest('[data-action]');
+      if(!btn) return;
+      var action = btn.dataset.action;
+      var id = btn.dataset.id;
+      if(action === 'tambah-produk') openProdukModal(null);
+      else if(action === 'edit-produk') openProdukModal(id);
+      else if(action === 'delete-produk') handleDeleteProduk(id);
+      else if(action === 'toggle-jenis') toggleJenisExpand(id);
+      else if(action === 'add-cart') addToCart();
+      else if(action === 'remove-cart') removeFromCart(Number(btn.dataset.idx));
+      else if(action === 'simpan-transaksi') submitTransaksi();
+      else if(action === 'download-template') downloadCsvTemplate();
+      else if(action === 'export-stok-excel') exportStokExcel();
+      else if(action === 'export-stok-pdf') exportStokPDF();
+      else if(action === 'export-penjualan-excel') exportPenjualanExcel();
+      else if(action === 'export-penjualan-pdf') exportPenjualanPDF();
+      else if(action === 'set-granularitas') setGranularitas(btn.dataset.granularitas);
+      else if(action === 'export-analitik-excel') exportAnalitikExcel();
+      else if(action === 'export-analitik-pdf') exportAnalitikPDF();
+    });
+
+    document.getElementById('content').addEventListener('input', function(e){
+      if(e.target.id === 'stokSearchInput'){
+        stokSearch = e.target.value;
+        renderStok();
+        var input = document.getElementById('stokSearchInput');
+        input.focus();
+        input.selectionStart = input.selectionEnd = input.value.length;
+      }
+      if(e.target.id === 'tanggalInput'){ penjualanTanggal = e.target.value; }
+    });
+
+    document.getElementById('content').addEventListener('change', function(e){
+      if(e.target.id === 'csvInput' && e.target.files && e.target.files[0]){
+        handleCsvFile(e.target.files[0]);
+        e.target.value = '';
+      }
+      if(e.target.id === 'tanggalInput'){ penjualanTanggal = e.target.value; }
+      if(e.target.id === 'dariInput'){ laporanFilter.dari = e.target.value; renderLaporan(); }
+      if(e.target.id === 'sampaiInput'){ laporanFilter.sampai = e.target.value; renderLaporan(); }
+      if(e.target.id === 'analitikDariInput'){ analitikFilter.dari = e.target.value; renderAnalitik(); }
+      if(e.target.id === 'analitikSampaiInput'){ analitikFilter.sampai = e.target.value; renderAnalitik(); }
+    });
+  }
+
+  function updateTopbarDate(){
+    var el = document.getElementById('topbarDate');
+    var d = new Date();
+    el.textContent = d.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }
+
+  /* ---------- Init ---------- */
+  function init(){
+    loadData().then(function(){
+      bindStaticEvents();
+      updateTopbarDate();
+      setStorageStatus(true);
+      switchTab('dashboard');
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
